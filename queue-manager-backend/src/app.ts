@@ -20,9 +20,23 @@ app.use(
   }),
 );
 
-// Allow requests from the frontend (set FRONTEND_URL in env, or * for development)
-const allowedOrigin = process.env.FRONTEND_URL ?? "*";
-app.use(cors({ origin: allowedOrigin }));
+// Allow requests from the frontend
+const allowedOrigins = [
+  process.env.FRONTEND_URL,
+  "https://dinner-peach-five.vercel.app",
+].filter(Boolean) as string[];
+
+app.use(cors({
+  origin: (origin, callback) => {
+    // Allow requests with no origin (mobile apps, curl, Render health checks)
+    if (!origin) return callback(null, true);
+    if (allowedOrigins.includes(origin) || allowedOrigins.includes("*")) {
+      return callback(null, true);
+    }
+    return callback(new Error(`CORS: origin ${origin} not allowed`));
+  },
+  credentials: true,
+}));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
