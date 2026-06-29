@@ -21,6 +21,11 @@ async function buildAll() {
     outdir: distDir,
     outExtension: { ".js": ".mjs" },
     logLevel: "info",
+    // Resolve local lib packages by path alias
+    alias: {
+      "@workspace/db": path.resolve(rootDir, "lib/db/src/index.ts"),
+      "@workspace/api-zod": path.resolve(rootDir, "lib/api-zod/src/index.ts"),
+    },
     external: [
       "*.node", "sharp", "better-sqlite3", "sqlite3", "canvas", "bcrypt",
       "argon2", "fsevents", "re2", "pg-native", "nodemailer", "handlebars",
