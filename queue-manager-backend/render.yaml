@@ -1,0 +1,21 @@
+services:
+  - type: web
+    name: queue-manager-api
+    runtime: node
+    region: oregon
+    plan: free
+    rootDir: .
+    buildCommand: npm install && npm run build
+    startCommand: npm run start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 10000
+      - key: DATABASE_URL
+        sync: false        # paste your Neon connection string in Render dashboard
+      - key: SESSION_SECRET
+        generateValue: true
+      - key: FRONTEND_URL
+        sync: false        # paste your frontend URL after deploying (e.g. https://queue-app.vercel.app)
+    healthCheckPath: /api/healthz

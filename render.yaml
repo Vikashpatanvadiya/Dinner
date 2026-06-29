@@ -1,0 +1,19 @@
+services:
+  - type: web
+    name: queue-manager-api
+    runtime: node
+    region: oregon
+    plan: free
+    rootDir: .
+    buildCommand: npm install -g pnpm && pnpm install --frozen-lockfile && NODE_ENV=production pnpm --filter @workspace/api-server run build:full
+    startCommand: pnpm --filter @workspace/api-server run start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 10000
+      - key: DATABASE_URL
+        sync: false   # set manually in Render dashboard — paste your Neon connection string here
+      - key: SESSION_SECRET
+        generateValue: true   # Render auto-generates a secure random value
+    healthCheckPath: /api/healthz
