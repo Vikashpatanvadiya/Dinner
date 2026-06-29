@@ -27,10 +27,7 @@ export default function Home() {
       <header className="border-b bg-card">
         <div className="container mx-auto px-4 py-6 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
-              <span className="text-primary-foreground font-bold font-mono">Q</span>
-            </div>
-            <span className="text-xl font-bold">LineUp</span>
+            <img src="/logo.png" alt="Logo" className="h-8 w-auto" />
           </div>
           <Link href="/restaurant/login" className="text-sm font-medium text-muted-foreground hover:text-foreground">
             Restaurant Login

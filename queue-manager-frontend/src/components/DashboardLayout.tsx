@@ -1,5 +1,5 @@
 import { Link, useLocation } from "wouter";
-import { LayoutDashboard, Users, Utensils, Receipt, QrCode, BarChart3, LogOut } from "lucide-react";
+import { Users, Utensils, Receipt, QrCode, BarChart3, LogOut } from "lucide-react";
 import { removeAuthToken, removeRestaurantId } from "@/lib/auth";
 import { useLogoutRestaurant } from "@api-client";
 
@@ -30,9 +30,8 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
       {/* Sidebar */}
       <aside className="w-64 bg-sidebar border-r border-sidebar-border hidden md:flex flex-col">
         <div className="p-6 border-b border-sidebar-border">
-          <Link href="/dashboard" className="flex items-center gap-2 font-bold text-xl text-sidebar-primary">
-            <LayoutDashboard className="h-6 w-6" />
-            <span>Host Stand</span>
+          <Link href="/dashboard" className="flex items-center gap-2">
+            <img src="/logo.png" alt="Logo" className="h-8 w-auto" />
           </Link>
         </div>
         <nav className="flex-1 p-4 space-y-1">
@@ -69,8 +68,8 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
       <main className="flex-1 flex flex-col min-w-0">
         {/* Mobile Header */}
         <header className="md:hidden h-14 bg-sidebar border-b border-sidebar-border flex items-center justify-between px-4">
-          <Link href="/dashboard" className="font-bold text-lg text-sidebar-primary">
-            Host Stand
+          <Link href="/dashboard" className="flex items-center gap-2">
+            <img src="/logo.png" alt="Logo" className="h-7 w-auto" />
           </Link>
           {/* Add mobile menu if needed, keeping simple for now */}
         </header>
