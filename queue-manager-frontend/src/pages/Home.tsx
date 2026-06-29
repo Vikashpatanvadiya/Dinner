@@ -25,9 +25,9 @@ export default function Home() {
   return (
     <div className="min-h-screen bg-background">
       <header className="border-b bg-card">
-        <div className="container mx-auto px-4 py-6 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <img src="/logo.png" alt="Logo" className="h-16 w-auto object-contain" />
+        <div className="container mx-auto px-4 py-3 flex items-center justify-between">
+          <div className="flex items-center">
+            <img src="/newlogo.png" alt="Logo" className="h-9 w-auto object-contain" />
           </div>
           <Link href="/restaurant/login" className="text-sm font-medium text-muted-foreground hover:text-foreground">
             Restaurant Login
