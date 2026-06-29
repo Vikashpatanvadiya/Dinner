@@ -27,7 +27,7 @@ export default function Home() {
       <header className="border-b bg-card">
         <div className="container mx-auto px-4 py-6 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <img src="/logo.png" alt="Logo" className="h-8 w-auto" />
+            <img src="/logo.png" alt="Logo" className="h-10 w-auto object-contain" />
           </div>
           <Link href="/restaurant/login" className="text-sm font-medium text-muted-foreground hover:text-foreground">
             Restaurant Login

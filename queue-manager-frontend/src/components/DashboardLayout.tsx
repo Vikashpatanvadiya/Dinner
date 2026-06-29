@@ -31,7 +31,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
       <aside className="w-64 bg-sidebar border-r border-sidebar-border hidden md:flex flex-col">
         <div className="p-6 border-b border-sidebar-border">
           <Link href="/dashboard" className="flex items-center gap-2">
-            <img src="/logo.png" alt="Logo" className="h-8 w-auto" />
+            <img src="/logo.png" alt="Logo" className="h-10 w-auto object-contain" />
           </Link>
         </div>
         <nav className="flex-1 p-4 space-y-1">
@@ -69,7 +69,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
         {/* Mobile Header */}
         <header className="md:hidden h-14 bg-sidebar border-b border-sidebar-border flex items-center justify-between px-4">
           <Link href="/dashboard" className="flex items-center gap-2">
-            <img src="/logo.png" alt="Logo" className="h-7 w-auto" />
+            <img src="/logo.png" alt="Logo" className="h-8 w-auto object-contain" />
           </Link>
           {/* Add mobile menu if needed, keeping simple for now */}
         </header>
