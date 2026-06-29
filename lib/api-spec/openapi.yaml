@@ -1,22 +1,31 @@
 openapi: 3.1.0
 info:
-  # Do not change the title, if the title changes, the import paths will be broken
   title: Api
   version: 0.1.0
-  description: API specification
+  description: Live Restaurant Queue & Pre-Order Platform API
 servers:
   - url: /api
     description: Base API path
 tags:
   - name: health
     description: Health operations
+  - name: auth
+    description: Restaurant authentication
+  - name: restaurants
+    description: Restaurant operations
+  - name: queue
+    description: Queue management
+  - name: menu
+    description: Menu management
+  - name: orders
+    description: Order management
+
 paths:
   /healthz:
     get:
       operationId: healthCheck
       tags: [health]
       summary: Health check
-      description: Returns server health status
       responses:
         "200":
           description: Healthy
@@ -24,13 +33,858 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+
+  # ─── Auth ───────────────────────────────────────────────────────────────────
+
+  /auth/signup:
+    post:
+      operationId: signupRestaurant
+      tags: [auth]
+      summary: Register a new restaurant
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RestaurantSignup"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthResponse"
+        "400":
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "409":
+          description: Email already exists
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /auth/login:
+    post:
+      operationId: loginRestaurant
+      tags: [auth]
+      summary: Login with email and password
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RestaurantLogin"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthResponse"
+        "401":
+          description: Invalid credentials
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /auth/logout:
+    post:
+      operationId: logoutRestaurant
+      tags: [auth]
+      summary: Logout
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+
+  /auth/me:
+    get:
+      operationId: getMe
+      tags: [auth]
+      summary: Get current authenticated restaurant
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Restaurant"
+        "401":
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  # ─── Restaurants (public) ────────────────────────────────────────────────────
+
+  /restaurants:
+    get:
+      operationId: listRestaurants
+      tags: [restaurants]
+      summary: List all restaurants with live queue status
+      parameters:
+        - name: cuisine_type
+          in: query
+          schema:
+            type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/RestaurantPublic"
+
+  /restaurants/{restaurantId}:
+    get:
+      operationId: getRestaurant
+      tags: [restaurants]
+      summary: Get a single restaurant with live queue status
+      parameters:
+        - name: restaurantId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RestaurantPublic"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /restaurants/{restaurantId}/settings:
+    patch:
+      operationId: updateRestaurantSettings
+      tags: [restaurants]
+      summary: Update restaurant settings (authenticated restaurant only)
+      parameters:
+        - name: restaurantId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RestaurantSettingsUpdate"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Restaurant"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  # ─── Queue ────────────────────────────────────────────────────────────────────
+
+  /restaurants/{restaurantId}/queue:
+    get:
+      operationId: getRestaurantQueue
+      tags: [queue]
+      summary: Get all queue entries for a restaurant (restaurant dashboard)
+      parameters:
+        - name: restaurantId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/QueueEntry"
+    post:
+      operationId: joinQueue
+      tags: [queue]
+      summary: Customer joins the queue (no login required)
+      parameters:
+        - name: restaurantId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/JoinQueueInput"
+      responses:
+        "201":
+          description: Joined queue
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/QueueEntry"
+        "400":
+          description: Queue is closed or invalid input
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /queue/{sessionToken}:
+    get:
+      operationId: getQueueEntry
+      tags: [queue]
+      summary: Get a customer's queue entry by session token (polling endpoint)
+      parameters:
+        - name: sessionToken
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/QueueEntryWithContext"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /queue/{sessionToken}/leave:
+    post:
+      operationId: leaveQueue
+      tags: [queue]
+      summary: Customer leaves the queue
+      parameters:
+        - name: sessionToken
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /queue-entries/{entryId}/call:
+    post:
+      operationId: callQueueEntry
+      tags: [queue]
+      summary: Restaurant calls a customer (marks as called)
+      parameters:
+        - name: entryId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/QueueEntry"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /queue-entries/{entryId}/seat:
+    post:
+      operationId: seatQueueEntry
+      tags: [queue]
+      summary: Restaurant seats a customer
+      parameters:
+        - name: entryId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/QueueEntry"
+
+  /queue-entries/{entryId}/remove:
+    post:
+      operationId: removeQueueEntry
+      tags: [queue]
+      summary: Restaurant removes a no-show customer
+      parameters:
+        - name: entryId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/QueueEntry"
+
+  # ─── Menu ─────────────────────────────────────────────────────────────────────
+
+  /restaurants/{restaurantId}/menu:
+    get:
+      operationId: listMenuItems
+      tags: [menu]
+      summary: List menu items for a restaurant (public)
+      parameters:
+        - name: restaurantId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/MenuItem"
+    post:
+      operationId: createMenuItem
+      tags: [menu]
+      summary: Create a menu item (restaurant auth required)
+      parameters:
+        - name: restaurantId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MenuItemInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MenuItem"
+
+  /menu-items/{itemId}:
+    patch:
+      operationId: updateMenuItem
+      tags: [menu]
+      summary: Update a menu item
+      parameters:
+        - name: itemId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MenuItemUpdate"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MenuItem"
+    delete:
+      operationId: deleteMenuItem
+      tags: [menu]
+      summary: Delete a menu item
+      parameters:
+        - name: itemId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+
+  # ─── Orders ───────────────────────────────────────────────────────────────────
+
+  /orders:
+    post:
+      operationId: createOrder
+      tags: [orders]
+      summary: Customer places a pre-order
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/OrderInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Order"
+        "400":
+          description: Invalid input
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /orders/{orderId}:
+    get:
+      operationId: getOrder
+      tags: [orders]
+      summary: Get an order by ID
+      parameters:
+        - name: orderId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Order"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /orders/{orderId}/status:
+    patch:
+      operationId: updateOrderStatus
+      tags: [orders]
+      summary: Restaurant updates order status
+      parameters:
+        - name: orderId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/OrderStatusUpdate"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Order"
+
+  /restaurants/{restaurantId}/orders:
+    get:
+      operationId: listRestaurantOrders
+      tags: [orders]
+      summary: List all active orders for a restaurant
+      parameters:
+        - name: restaurantId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Order"
+
+  /restaurants/{restaurantId}/stats:
+    get:
+      operationId: getRestaurantStats
+      tags: [restaurants]
+      summary: Daily summary stats for a restaurant
+      parameters:
+        - name: restaurantId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RestaurantStats"
+
 components:
   schemas:
     HealthStatus:
       type: object
+      required: [status]
       properties:
         status:
           type: string
-      required:
-        - status
 
+    ErrorResponse:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: string
+
+    SuccessResponse:
+      type: object
+      required: [success]
+      properties:
+        success:
+          type: boolean
+
+    # ─── Auth ──────────────────────────────────────────────────────────────────
+
+    RestaurantSignup:
+      type: object
+      required: [name, ownerName, email, password, phone, address, cuisineType]
+      properties:
+        name:
+          type: string
+        ownerName:
+          type: string
+        email:
+          type: string
+        password:
+          type: string
+          minLength: 6
+        phone:
+          type: string
+        address:
+          type: string
+        cuisineType:
+          type: string
+
+    RestaurantLogin:
+      type: object
+      required: [email, password]
+      properties:
+        email:
+          type: string
+        password:
+          type: string
+
+    AuthResponse:
+      type: object
+      required: [restaurant, token]
+      properties:
+        restaurant:
+          $ref: "#/components/schemas/Restaurant"
+        token:
+          type: string
+
+    # ─── Restaurant ─────────────────────────────────────────────────────────────
+
+    Restaurant:
+      type: object
+      required: [id, name, ownerName, email, phone, address, cuisineType, avgWaitPerTableMins, queueOpen, createdAt]
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        ownerName:
+          type: string
+        email:
+          type: string
+        phone:
+          type: string
+        address:
+          type: string
+        cuisineType:
+          type: string
+        photo:
+          type: ["string", "null"]
+        avgWaitPerTableMins:
+          type: integer
+        queueOpen:
+          type: boolean
+        preOrderThreshold:
+          type: integer
+        createdAt:
+          type: string
+
+    RestaurantPublic:
+      type: object
+      required: [id, name, address, cuisineType, avgWaitPerTableMins, queueOpen, queueLength, estimatedWaitMins]
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        address:
+          type: string
+        cuisineType:
+          type: string
+        photo:
+          type: ["string", "null"]
+        avgWaitPerTableMins:
+          type: integer
+        queueOpen:
+          type: boolean
+        preOrderThreshold:
+          type: integer
+        queueLength:
+          type: integer
+        estimatedWaitMins:
+          type: integer
+
+    RestaurantSettingsUpdate:
+      type: object
+      properties:
+        avgWaitPerTableMins:
+          type: integer
+        queueOpen:
+          type: boolean
+        preOrderThreshold:
+          type: integer
+        photo:
+          type: string
+
+    RestaurantStats:
+      type: object
+      required: [customersServedToday, totalOrdersToday, totalRevenueToday, avgWaitMins]
+      properties:
+        customersServedToday:
+          type: integer
+        totalOrdersToday:
+          type: integer
+        totalRevenueToday:
+          type: number
+        avgWaitMins:
+          type: number
+
+    # ─── Queue ─────────────────────────────────────────────────────────────────
+
+    JoinQueueInput:
+      type: object
+      required: [customerName, customerPhone, partySize]
+      properties:
+        customerName:
+          type: string
+        customerPhone:
+          type: string
+        partySize:
+          type: integer
+          minimum: 1
+
+    QueueEntry:
+      type: object
+      required: [id, restaurantId, queueNumber, customerName, customerPhone, partySize, status, joinedAt, sessionToken]
+      properties:
+        id:
+          type: integer
+        restaurantId:
+          type: integer
+        queueNumber:
+          type: integer
+        customerName:
+          type: string
+        customerPhone:
+          type: string
+        partySize:
+          type: integer
+        status:
+          type: string
+          enum: [waiting, called, seated, removed]
+        joinedAt:
+          type: string
+        sessionToken:
+          type: string
+        orderId:
+          type: ["integer", "null"]
+
+    QueueEntryWithContext:
+      type: object
+      required: [entry, position, estimatedWaitMins, restaurant, canPreOrder]
+      properties:
+        entry:
+          $ref: "#/components/schemas/QueueEntry"
+        position:
+          type: integer
+        estimatedWaitMins:
+          type: integer
+        restaurant:
+          $ref: "#/components/schemas/RestaurantPublic"
+        canPreOrder:
+          type: boolean
+        order:
+          $ref: "#/components/schemas/Order"
+
+    # ─── Menu ──────────────────────────────────────────────────────────────────
+
+    MenuItem:
+      type: object
+      required: [id, restaurantId, name, price, category, isAvailable]
+      properties:
+        id:
+          type: integer
+        restaurantId:
+          type: integer
+        name:
+          type: string
+        price:
+          type: number
+        category:
+          type: string
+        isAvailable:
+          type: boolean
+
+    MenuItemInput:
+      type: object
+      required: [name, price, category]
+      properties:
+        name:
+          type: string
+        price:
+          type: number
+        category:
+          type: string
+        isAvailable:
+          type: boolean
+
+    MenuItemUpdate:
+      type: object
+      properties:
+        name:
+          type: string
+        price:
+          type: number
+        category:
+          type: string
+        isAvailable:
+          type: boolean
+
+    # ─── Orders ────────────────────────────────────────────────────────────────
+
+    OrderItem:
+      type: object
+      required: [menuItemId, name, qty, price]
+      properties:
+        menuItemId:
+          type: integer
+        name:
+          type: string
+        qty:
+          type: integer
+        price:
+          type: number
+
+    OrderInput:
+      type: object
+      required: [sessionToken, items]
+      properties:
+        sessionToken:
+          type: string
+        items:
+          type: array
+          items:
+            type: object
+            required: [menuItemId, qty]
+            properties:
+              menuItemId:
+                type: integer
+              qty:
+                type: integer
+
+    Order:
+      type: object
+      required: [id, queueEntryId, restaurantId, items, status, totalAmount, paymentStatus, createdAt]
+      properties:
+        id:
+          type: integer
+        queueEntryId:
+          type: integer
+        restaurantId:
+          type: integer
+        customerName:
+          type: string
+        queueNumber:
+          type: integer
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/OrderItem"
+        status:
+          type: string
+          enum: [placed, preparing, ready, served]
+        totalAmount:
+          type: number
+        paymentStatus:
+          type: string
+          enum: [pending, paid_cash, paid_online]
+        createdAt:
+          type: string
+
+    OrderStatusUpdate:
+      type: object
+      required: [status]
+      properties:
+        status:
+          type: string
+          enum: [placed, preparing, ready, served]
+        paymentStatus:
+          type: string
+          enum: [pending, paid_cash, paid_online]
